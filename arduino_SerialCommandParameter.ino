@@ -10,16 +10,16 @@
 #define ERROR_CODE_BED_TEMPERATURE      2
 
 const char *error_code_str[] =  { "No Error", "Hotend", "Bed" };
-const char *status_str[] =      { "Ok", "SD", "Error"};
+const char *sysstatus_str[]  =  { "Ok", "SD", "Error"};
 
-//#define COMMAND_CRC_ENABLE  true    //如果命令里包括*，则进行CRC校验
+//#define COMMAND_CRC_ENABLE  true    //check the CRC, if '*' included.
 #define COMMNAD_LINE_ENABLE false
 
 //Printer status variables
-int status = STATUS_OK; //
-int error_code = ERROR_CODE_NO_ERROR; //0=Nothing, 1=Heater thermistor error
+unsigned int sysstatus = STATUS_OK; //
+unsigned int error_code = ERROR_CODE_NO_ERROR; //0=Nothing, 1=Heater thermistor error
 
-long command_No, command_LastNo;
+unsigned long command_No, command_LastNo;
 
 
 // comm variables
@@ -29,10 +29,10 @@ long command_No, command_LastNo;
 char cmdbuffer[CMD_BUF_SIZE][MAX_CMD_SIZE];
 
 
-int bufindr = 0;    //buffer index writing
-int bufindw = 0;    //buffer index reading
+unsigned int bufindr = 0;    //buffer index writing
+unsigned int bufindw = 0;    //buffer index reading
 
-int buflen = 0;     //how many COMMANDS current in buffer
+unsigned int buflen = 0;     //how many COMMANDS current in buffer
 
 
 char serial_char;               
@@ -267,7 +267,7 @@ void FlushSerialRequestREsend()
 void ClearToSend()
 {
     //previous_millis_cmd = millis();
-    if (status == STATUS_ERROR)
+    if (sysstatus == STATUS_ERROR)
     {
         Serial.print("EC:");
         Serial.println(error_code);
