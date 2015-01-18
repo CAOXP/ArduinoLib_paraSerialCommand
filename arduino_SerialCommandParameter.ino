@@ -13,7 +13,13 @@ const char *error_code_str[] =  { "No Error", "Hotend", "Bed" };
 const char *sysstatus_str[]  =  { "Ok", "SD", "Error"};
 
 //#define COMMAND_CRC_ENABLE  true    //check the CRC, if '*' included.
-#define COMMNAD_LINE_ENABLE false
+#define COMMNAD_LINE_ENABLE true
+
+#if COMMNAD_LINE_ENABLE
+    #define COMMAND_CRC_ENABLE  false
+#endif
+
+
 
 //Printer status variables
 unsigned int sysstatus = STATUS_OK; //
@@ -113,6 +119,8 @@ inline void get_command()
                         return;
                     }
 
+
+                #if COMMAND_CRC_ENABLE
                     //CHECK the CRC, if '*'' found in command
                     if(strstr(cmdbuffer[bufindw], "*") != NULL)
                     {
@@ -139,6 +147,7 @@ inline void get_command()
                         serial_count = 0;
                         return;
                     }
+                #endif
 
                     command_LastNo = command_No;
                     //if no errors, continue parsing
