@@ -8,11 +8,12 @@
 #define ERROR_CODE_NO_ERROR             0
 #define ERROR_CODE_HOTEND_TEMPERATURE   1
 #define ERROR_CODE_BED_TEMPERATURE      2
+
 const char *error_code_str[] =  { "No Error", "Hotend", "Bed" };
 const char *status_str[] =      { "Ok", "SD", "Error"};
 
 //#define COMMAND_CRC_ENABLE  true    //如果命令里包括*，则进行CRC校验
-#define COMMNAD_LINE_ENABLE true
+#define COMMNAD_LINE_ENABLE false
 
 //Printer status variables
 int status = STATUS_OK; //
@@ -22,19 +23,23 @@ long command_No, command_LastNo;
 
 
 // comm variables
-#define MAX_CMD_SIZE 60
-#define BUFSIZE 6
-char cmdbuffer[BUFSIZE][MAX_CMD_SIZE];
+#define MAX_CMD_SIZE    20
+#define CMD_BUF_SIZE    4
+
+char cmdbuffer[CMD_BUF_SIZE][MAX_CMD_SIZE];
 
 
 int bufindr = 0;    //buffer index writing
 int bufindw = 0;    //buffer index reading
-int buflen = 0;
-int i = 0;
-char serial_char;
-int serial_count = 0;
 
-boolean comment_mode = false;   // is ready to receive command or not
+int buflen = 0;     //how many COMMANDS current in buffer
+
+
+char serial_char;               
+unsigned int i = 0;
+unsigned int serial_count = 0;
+
+boolean comment_mode = false;
 
 //extern char *strstr(char *sr,char *s);
 //  搜索字串s在字串sr中的第一次出现的地址    返回为[实际]地址指针 char *
@@ -44,26 +49,15 @@ boolean comment_mode = false;   // is ready to receive command or not
 char *strchr_pointer; // just a pointer to find chars in the cmd string like X, Y, Z, E, etc
 
 
-
-
-//Inactivity shutdown variables
-unsigned long previous_millis_cmd = 0;
-
 void setup()
 {
     Serial.begin(115200);
     Serial.println("start");
 }
 
-void get_command();
-void process_commands();
-
-void FlushSerialRequestResend();
-void ClearToSend();
 
 void loop()
 {
-
 
     if(buflen < 3)
         get_command();
@@ -74,8 +68,10 @@ void loop()
         process_commands();
 
         buflen = (buflen - 1);
-        bufindr = (bufindr + 1) % BUFSIZE;
+        bufindr = (bufindr + 1) % CMD_BUF_SIZE;
     }
+
+    //test
     //check heater every n milliseconds
     manage_heater();
 
@@ -84,7 +80,7 @@ void loop()
 
 inline void get_command()
 {
-    while( Serial.available() > 0  && buflen < BUFSIZE)
+    while( Serial.available() > 0  && buflen < CMD_BUF_SIZE)
     {
         //read the serial by BYTE
         serial_char = Serial.read();   
@@ -129,7 +125,7 @@ inline void get_command()
                         {
                             Serial.print("Error: checksum mismatch, Last Line:");
                             Serial.println(command_LastNo);
-                            FlushSerialRequestResend();
+                            FlushSerialRequestREsend();
                             serial_count = 0;
                             return;
                         }
@@ -139,7 +135,7 @@ inline void get_command()
                     {
                         Serial.print("Error: No Checksum with line number, Last Line:");
                         Serial.println(command_LastNo);
-                        FlushSerialRequestResend();
+                        FlushSerialRequestREsend();
                         serial_count = 0;
                         return;
                     }
@@ -173,16 +169,22 @@ inline void get_command()
                     }
 
                 }
-                bufindw = (bufindw + 1) % BUFSIZE;
+
+
+                bufindw = (bufindw + 1) % CMD_BUF_SIZE;
                 buflen += 1;
 
-            }
+            }//if(!comment_mode)
+
             comment_mode = false; //for new command
             serial_count = 0; //clear buffer
         }
         else
         {
+            //ignore the comment lines, which contains ';'
             if(serial_char == ';') comment_mode = true;
+
+            //continue to receive the command char into buffer
             if(!comment_mode) cmdbuffer[bufindw][serial_count++] = serial_char;
         }
     }
@@ -219,10 +221,12 @@ inline void process_commands()
     {
         switch((int)code_value())
         {
-        case 4: // G4 dwell
+        case 3: 
             codenum = 0;
             if(code_seen('P')) codenum = code_value(); // milliseconds to wait
             if(code_seen('S')) codenum = code_value() * 1000; // seconds to wait
+
+            Serial.println("Command received");
             break;
         }
     }
@@ -235,8 +239,6 @@ inline void process_commands()
         case 4: //Ask for status
             break;
         case 5: //Reset errors
-            status = STATUS_OK;
-            error_code = ERROR_CODE_NO_ERROR;
             break;
         }
 
@@ -251,16 +253,9 @@ inline void process_commands()
 
 }
 
-int byteToint(byte value)
-{
-    if(value >> 7)
-    {
-        return (255 - value + 1) * -1;
-    }
-    return value;
-}
 
-void FlushSerialRequestResend()
+
+void FlushSerialRequestREsend()
 {
     //char cmdbuffer[bufindr][100]="Resend:";
     Serial.flush();
@@ -271,7 +266,7 @@ void FlushSerialRequestResend()
 
 void ClearToSend()
 {
-    previous_millis_cmd = millis();
+    //previous_millis_cmd = millis();
     if (status == STATUS_ERROR)
     {
         Serial.print("EC:");
