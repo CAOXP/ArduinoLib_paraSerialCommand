@@ -1,17 +1,18 @@
 // Do not remove the include below
-#include "Sprinter_UNO.h"
 
-#define STATUS_OK 0
-#define STATUS_SD 1
-#define STATUS_ERROR 2
+
+#define STATUS_OK       0
+#define STATUS_SD       1
+#define STATUS_ERROR    2
 
 #define ERROR_CODE_NO_ERROR             0
 #define ERROR_CODE_HOTEND_TEMPERATURE   1
 #define ERROR_CODE_BED_TEMPERATURE      2
-const char *error_code_str[] = { "No Error", "Hotend", "Bed" };
-const char *status_str[] = { "Ok", "SD", "Error"};
+const char *error_code_str[] =  { "No Error", "Hotend", "Bed" };
+const char *status_str[] =      { "Ok", "SD", "Error"};
 
-#define COMMAND_CRC_ENABLE true
+//#define COMMAND_CRC_ENABLE  true    //如果命令里包括*，则进行CRC校验
+#define COMMNAD_LINE_ENABLE true
 
 //Printer status variables
 int status = STATUS_OK; //
@@ -26,13 +27,20 @@ long command_No, command_LastNo;
 char cmdbuffer[BUFSIZE][MAX_CMD_SIZE];
 
 
-int bufindr = 0;
-int bufindw = 0;
+int bufindr = 0;    //buffer index writing
+int bufindw = 0;    //buffer index reading
 int buflen = 0;
 int i = 0;
 char serial_char;
 int serial_count = 0;
-boolean comment_mode = false;
+
+boolean comment_mode = false;   // is ready to receive command or not
+
+//extern char *strstr(char *sr,char *s);
+//  搜索字串s在字串sr中的第一次出现的地址    返回为[实际]地址指针 char *
+//extern char *strchr(char *sr,char c);
+//  查找字串sr中首次出现字符c的位置的地址    返回为[实际]地址指针 char *
+//
 char *strchr_pointer; // just a pointer to find chars in the cmd string like X, Y, Z, E, etc
 
 
@@ -78,17 +86,26 @@ inline void get_command()
 {
     while( Serial.available() > 0  && buflen < BUFSIZE)
     {
-        serial_char = Serial.read();
+        //read the serial by BYTE
+        serial_char = Serial.read();   
+
+        //check the line ending
+        // by \n \r : over-count
         if(serial_char == '\n' || serial_char == '\r' || serial_char == ':' || serial_count >= (MAX_CMD_SIZE - 1) )
         {
-            if(!serial_count) return; //if empty line
-            cmdbuffer[bufindw][serial_count] = 0; //terminate string
+            if(!serial_count) return;               //if empty line
+            cmdbuffer[bufindw][serial_count] = 0;   //terminate string
+
             if(!comment_mode)
             {
 
+            #if COMMNAD_LINE_ENABLE
                 if(strstr(cmdbuffer[bufindw], "N") != NULL)
                 {
+
                     strchr_pointer = strchr(cmdbuffer[bufindw], 'N');
+
+                    //CHECK the command sequence
                     command_No = (strtol(&cmdbuffer[bufindw][strchr_pointer - cmdbuffer[bufindw] + 1], NULL, 10));
                     if(command_No != command_LastNo + 1 && (strstr(cmdbuffer[bufindw], "M110") == NULL) )
                     {
@@ -100,6 +117,7 @@ inline void get_command()
                         return;
                     }
 
+                    //CHECK the CRC, if '*'' found in command
                     if(strstr(cmdbuffer[bufindw], "*") != NULL)
                     {
                         byte checksum = 0;
@@ -139,6 +157,8 @@ inline void get_command()
                         return;
                     }
                 }
+            #endif
+
                 if((strstr(cmdbuffer[bufindw], "G") != NULL))
                 {
                     strchr_pointer = strchr(cmdbuffer[bufindw], 'G');
