@@ -136,7 +136,7 @@ inline void getCommand()
                     {
                         Serial.print("Serial Error: Line Number is not Last Line Number+1, Last Line:");
                         Serial.println(command_LastNo);
-                        //Serial.println(gcode_N);
+                        
                         FlushSerialRequestREsend();
                         serial_count = 0;
                         return;
