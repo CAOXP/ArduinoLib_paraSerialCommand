@@ -81,7 +81,8 @@ const char *cmd_error_code_str[] =  {   "Serial Error: LineNumber is not Last Li
 #define CMD_ERROR_LINE_NUMBER_LOSS          (1<<1)
 #define CMD_ERROR_CRC_MISMATCH              (1<<2)
 #define CMD_ERROR_CRC_LOSS                  (1<<3)
-unsigned long command_No, command_LastNo;
+unsigned long command_No=0;
+unsigned long command_LastNo=0;
 byte cmd_error=CMD_ERROR_NO_ERROR;
 #endif
 
@@ -314,7 +315,7 @@ void FlushSerialRequestREsend()
     //char cmdbuffer[bufindr][100]="Resend:";
     Serial.flush();
     Serial.print("Resend:");
-    
+
     #if COMMNAD_LINE_ENABLE
     Serial.println(command_LastNo + 1);
     #else
