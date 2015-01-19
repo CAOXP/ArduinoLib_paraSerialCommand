@@ -208,7 +208,7 @@ inline void getCommand()
                 command_LastNo = command_No;
                 #endif
                 
-                //
+                //additional pre-process the command
                 if((strstr(cmdbuffer[bufindw], "G") != NULL))
                 {
                     strchr_pointer = strchr(cmdbuffer[bufindw], 'G');
