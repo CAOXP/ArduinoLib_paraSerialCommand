@@ -5,55 +5,80 @@
 #define STATUS_SD       1
 #define STATUS_ERROR    2
 
-#define ERROR_CODE_NO_ERROR             0
-#define ERROR_CODE_HOTEND_TEMPERATURE   1
-#define ERROR_CODE_BED_TEMPERATURE      2
+#define ERROR_CODE_NO_ERROR     0
+#define ERROR_CODE_ERROR_1      1
+#define ERROR_CODE_ERROR_2      2
 
-const char *error_code_str[] =  { "No Error", "Hotend", "Bed" };
-const char *sysstatus_str[]  =  { "Ok", "SD", "Error"};
+const char *error_code_str[] =  {   "No Error", 
+                                    "Error 1", 
+                                    "Error 2" };
 
-//#define COMMAND_CRC_ENABLE  true    //check the CRC, if '*' included.
+const char *sysstatus_str[]  =  {   "Ok", 
+                                    "SD", 
+                                    "Error"};
+
+//=======================================================================
+//                      command line defination
+//=======================================================================
+
 #define COMMNAD_LINE_ENABLE true
 
 #if COMMNAD_LINE_ENABLE
+    //COMMAND LINE variables
+    unsigned long command_No, command_LastNo;
+
+    //check the CRC, if '*' included.
     #define COMMAND_CRC_ENABLE  false
+
 #endif
 
+//=======================================================================
+//                      comment mode
+//
+//  ignore the command with ";"
+//=======================================================================
+boolean comment_mode = false;
+
+//=======================================================================
+//                      System status
+//
+//=======================================================================
+unsigned int sysstatus  = STATUS_OK;
+unsigned int error_code = ERROR_CODE_NO_ERROR; 
 
 
-//Printer status variables
-unsigned int sysstatus = STATUS_OK; //
-unsigned int error_code = ERROR_CODE_NO_ERROR; //0=Nothing, 1=Heater thermistor error
+//=======================================================================
+//                      Command Buffer
+//
+//=======================================================================
 
-unsigned long command_No, command_LastNo;
-
-
-// comm variables
-#define MAX_CMD_SIZE    20
-#define CMD_BUF_SIZE    4
+#define MAX_CMD_SIZE        20      //
+#define CMD_BUF_SIZE        4       //
 
 char cmdbuffer[CMD_BUF_SIZE][MAX_CMD_SIZE];
 
+//buffer threshold
+// getCommand() from PC, if 'buflen' lower than this
+#define CMD_BUF_THRESHOLD  (CMD_BUF_SIZE-1)  
 
 unsigned int bufindr = 0;    //buffer index writing
 unsigned int bufindw = 0;    //buffer index reading
-
 unsigned int buflen = 0;     //how many COMMANDS current in buffer
-
 
 char serial_char;               
 unsigned int i = 0;
 unsigned int serial_count = 0;
 
-boolean comment_mode = false;
-
 //extern char *strstr(char *sr,char *s);
 //  搜索字串s在字串sr中的第一次出现的地址    返回为[实际]地址指针 char *
 //extern char *strchr(char *sr,char c);
 //  查找字串sr中首次出现字符c的位置的地址    返回为[实际]地址指针 char *
-//
 char *strchr_pointer; // just a pointer to find chars in the cmd string like X, Y, Z, E, etc
 
+
+//=======================================================================
+//                      Setup
+//=======================================================================
 
 void setup()
 {
@@ -65,26 +90,24 @@ void setup()
 void loop()
 {
 
-    if(buflen < 3)
-        get_command();
+    if(buflen < CMD_BUF_THRESHOLD)
+        getCommand();
 
     if(buflen)
     {
-
-        process_commands();
+        processCommands();
 
         buflen = (buflen - 1);
         bufindr = (bufindr + 1) % CMD_BUF_SIZE;
     }
 
-    //test
-    //check heater every n milliseconds
-    manage_heater();
+    //test  every n milliseconds
+    other_managements();
 
 }
 
 
-inline void get_command()
+inline void getCommand()
 {
     while( Serial.available() > 0  && buflen < CMD_BUF_SIZE)
     {
@@ -204,6 +227,7 @@ inline void get_command()
 
 inline float code_value()
 {
+    //return float value: strtod
     return (strtod(&cmdbuffer[bufindr][strchr_pointer - cmdbuffer[bufindr] + 1], NULL));
 }
 inline long code_value_long()
@@ -221,7 +245,7 @@ inline bool code_seen(char code)
     return (strchr_pointer != NULL);  //Return True if a character was found
 }
 
-inline void process_commands()
+inline void processCommands()
 {
     unsigned long codenum; //throw away variable
     char *starpos = NULL;
@@ -288,6 +312,6 @@ void ClearToSend()
 }
 
 
-void manage_heater()
+void other_managements()
 {
 }
