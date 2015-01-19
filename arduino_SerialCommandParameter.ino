@@ -63,7 +63,7 @@ char cmdbuffer[CMD_BUF_SIZE][MAX_CMD_SIZE];
 
 unsigned int bufindr = 0;    //buffer index writing
 unsigned int bufindw = 0;    //buffer index reading
-unsigned int buflen = 0;     //how many COMMANDS current in buffer
+unsigned int buflen  = 0;    //how many COMMANDS current in buffer
 
 char serial_char;               
 unsigned int i = 0;
@@ -101,7 +101,7 @@ void loop()
         bufindr = (bufindr + 1) % CMD_BUF_SIZE;
     }
 
-    //test  every n milliseconds
+    //test,every n milliseconds
     other_managements();
 
 }
@@ -137,7 +137,7 @@ inline void getCommand()
                         Serial.print("Serial Error: Line Number is not Last Line Number+1, Last Line:");
                         Serial.println(command_LastNo);
                         //Serial.println(gcode_N);
-                        FlushSerialRequestResend();
+                        FlushSerialRequestREsend();
                         serial_count = 0;
                         return;
                     }
