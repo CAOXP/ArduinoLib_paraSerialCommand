@@ -21,16 +21,11 @@ const char *sysstatus_str[]  =  {   "Ok",
 //                      command line defination
 //=======================================================================
 
-#define COMMNAD_LINE_ENABLE true
+#define COMMNAD_LINE_ENABLE false
+//check the CRC, if '*' included.
+#define COMMAND_CRC_ENABLE  false
 
-#if COMMNAD_LINE_ENABLE
-    //COMMAND LINE variables
-    unsigned long command_No, command_LastNo;
 
-    //check the CRC, if '*' included.
-    #define COMMAND_CRC_ENABLE  false
-
-#endif
 
 //=======================================================================
 //                      comment mode
@@ -52,8 +47,8 @@ unsigned int error_code = ERROR_CODE_NO_ERROR;
 //
 //=======================================================================
 
-#define MAX_CMD_SIZE        20      //
-#define CMD_BUF_SIZE        4       //
+#define MAX_CMD_SIZE        80      //
+#define CMD_BUF_SIZE        5       //
 
 char cmdbuffer[CMD_BUF_SIZE][MAX_CMD_SIZE];
 
@@ -75,6 +70,20 @@ unsigned int serial_count = 0;
 //  查找字串sr中首次出现字符c的位置的地址    返回为[实际]地址指针 char *
 char *strchr_pointer; // just a pointer to find chars in the cmd string like X, Y, Z, E, etc
 
+
+#if COMMNAD_LINE_ENABLE || COMMAND_CRC_ENABLE
+const char *cmd_error_code_str[] =  {   "Serial Error: LineNumber is not Last Line Number+1", 
+                                        "Serial Error: LineNumber Loss!", 
+                                        "Serial Error: CRC:Mismatch!" ,
+                                        "Serial Error: CRC:No CRC!",};
+#define CMD_ERROR_NO_ERROR                  0
+#define CMD_ERROR_LINE_NUMBER_MISMATCH      (1<<0)
+#define CMD_ERROR_LINE_NUMBER_LOSS          (1<<1)
+#define CMD_ERROR_CRC_MISMATCH              (1<<2)
+#define CMD_ERROR_CRC_LOSS                  (1<<3)
+unsigned long command_No, command_LastNo;
+byte cmd_error=CMD_ERROR_NO_ERROR;
+#endif
 
 //=======================================================================
 //                      Setup
@@ -123,70 +132,82 @@ inline void getCommand()
 
             if(!comment_mode)
             {
+                #if COMMNAD_LINE_ENABLE || COMMAND_CRC_ENABLE
+                cmd_error=CMD_ERROR_NO_ERROR;
+                #endif
 
-            #if COMMNAD_LINE_ENABLE
-                if(strstr(cmdbuffer[bufindw], "N") != NULL)
+                #if COMMNAD_LINE_ENABLE
+
+                //some commands do not need command line number.    [not done yet]
+                //if( strstr(cmdbuffer[bufindw], "M110") == NULL  )
+
+                if(strstr(cmdbuffer[bufindw], "N") == NULL)
                 {
-
+                    //tag error
+                    cmd_error |= CMD_ERROR_LINE_NUMBER_LOSS;                    
+                }
+                else 
+                {
                     strchr_pointer = strchr(cmdbuffer[bufindw], 'N');
 
                     //CHECK the command sequence
                     command_No = (strtol(&cmdbuffer[bufindw][strchr_pointer - cmdbuffer[bufindw] + 1], NULL, 10));
-                    if(command_No != command_LastNo + 1 && (strstr(cmdbuffer[bufindw], "M110") == NULL) )
+                    
+                    if(command_No != command_LastNo + 1)
                     {
-                        Serial.print("Serial Error: Line Number is not Last Line Number+1, Last Line:");
-                        Serial.println(command_LastNo);
-                        
-                        FlushSerialRequestREsend();
-                        serial_count = 0;
-                        return;
+                        //tag error
+                        cmd_error |= CMD_ERROR_LINE_NUMBER_MISMATCH;
                     }
-
-
-                #if COMMAND_CRC_ENABLE
-                    //CHECK the CRC, if '*'' found in command
-                    if(strstr(cmdbuffer[bufindw], "*") != NULL)
-                    {
-                        byte checksum = 0;
-                        byte count = 0;
-                        while(cmdbuffer[bufindw][count] != '*') checksum = checksum ^ cmdbuffer[bufindw][count++];
-                        strchr_pointer = strchr(cmdbuffer[bufindw], '*');
-
-                        if( (int)(strtod(&cmdbuffer[bufindw][strchr_pointer - cmdbuffer[bufindw] + 1], NULL)) != checksum)
-                        {
-                            Serial.print("Error: checksum mismatch, Last Line:");
-                            Serial.println(command_LastNo);
-                            FlushSerialRequestREsend();
-                            serial_count = 0;
-                            return;
-                        }
-                        //if no errors, continue parsing
-                    }
-                    else
-                    {
-                        Serial.print("Error: No Checksum with line number, Last Line:");
-                        Serial.println(command_LastNo);
-                        FlushSerialRequestREsend();
-                        serial_count = 0;
-                        return;
-                    }
+                }
                 #endif
 
-                    command_LastNo = command_No;
-                    //if no errors, continue parsing
-                }
-                else  // if we don't receive 'N' but still see '*'
+                #if COMMAND_CRC_ENABLE
+                //CHECK the CRC
+                if(strstr(cmdbuffer[bufindw], "*") == NULL)
                 {
-                    if((strstr(cmdbuffer[bufindw], "*") != NULL))
+                    //tag error
+                    cmd_error |= CMD_ERROR_CRC_LOSS;
+                }
+                else
+                {
+                    byte checksum = 0;
+                    byte count    = 0;
+                    while(cmdbuffer[bufindw][count] != '*') checksum = checksum ^ cmdbuffer[bufindw][count++];
+                    strchr_pointer = strchr(cmdbuffer[bufindw], '*');
+
+                    if( (int)(strtod(&cmdbuffer[bufindw][strchr_pointer - cmdbuffer[bufindw] + 1], NULL)) != checksum)
                     {
-                        Serial.print("Error: No Line Number with checksum, Last Line:");
-                        Serial.println(command_LastNo);
-                        serial_count = 0;
-                        return;
+                        //tag error
+                        cmd_error |= CMD_ERROR_CRC_MISMATCH;
                     }
                 }
-            #endif
 
+                #endif
+
+                #if COMMNAD_LINE_ENABLE || COMMAND_CRC_ENABLE
+                if( cmd_error !=  CMD_ERROR_NO_ERROR)
+                {
+                    for(i=0; i<4; i++)
+                    {
+                        if(cmd_error & (1<<i)) 
+                        {
+                            Serial.println(cmd_error_code_str[i]);
+                        }
+                    }
+                    Serial.print("Last Line:");
+                    Serial.println(command_LastNo);
+                    FlushSerialRequestREsend();
+                    serial_count = 0;
+                    return;
+                }
+                #endif
+                
+                #if COMMNAD_LINE_ENABLE
+                //if no errors, continue parsing
+                command_LastNo = command_No;
+                #endif
+                
+                //
                 if((strstr(cmdbuffer[bufindw], "G") != NULL))
                 {
                     strchr_pointer = strchr(cmdbuffer[bufindw], 'G');
@@ -293,7 +314,13 @@ void FlushSerialRequestREsend()
     //char cmdbuffer[bufindr][100]="Resend:";
     Serial.flush();
     Serial.print("Resend:");
+    
+    #if COMMNAD_LINE_ENABLE
     Serial.println(command_LastNo + 1);
+    #else
+    Serial.println();
+    #endif
+
     ClearToSend();
 }
 
