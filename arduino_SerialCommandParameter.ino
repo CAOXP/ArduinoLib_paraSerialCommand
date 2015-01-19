@@ -21,9 +21,9 @@ const char *sysstatus_str[]  =  {   "Ok",
 //                      command line defination
 //=======================================================================
 
-#define COMMNAD_LINE_ENABLE false
+#define COMMNAD_LINE_ENABLE false       //N2 G0 X2
 //check the CRC, if '*' included.
-#define COMMAND_CRC_ENABLE  false
+#define COMMAND_CRC_ENABLE  false       //N2 G0 X2 *23
 
 
 
@@ -86,34 +86,96 @@ unsigned long command_LastNo=0;
 byte cmd_error=CMD_ERROR_NO_ERROR;
 #endif
 
-//=======================================================================
-//                      Setup
-//=======================================================================
 
-void setup()
+
+
+
+inline float code_value()
 {
-    Serial.begin(115200);
-    Serial.println("start");
+    //return float value: strtod
+    return (strtod(&cmdbuffer[bufindr][strchr_pointer - cmdbuffer[bufindr] + 1], NULL));
+}
+inline long code_value_long()
+{
+    return (strtol(&cmdbuffer[bufindr][strchr_pointer - cmdbuffer[bufindr] + 1], NULL, 10));
+}
+inline bool code_seen(char code_string[])
+{
+    return (strstr(cmdbuffer[bufindr], code_string) != NULL);    //Return True if the string was found
+}
+
+inline bool code_seen(char code)
+{
+    strchr_pointer = strchr(cmdbuffer[bufindr], code);
+    return (strchr_pointer != NULL);  //Return True if a character was found
+}
+
+inline void processCommands()
+{
+    unsigned long codenum; //throw away variable
+    char *starpos = NULL;
+
+    if(code_seen('G'))
+    {
+        switch((int)code_value())
+        {
+        case 3: 
+            codenum = 0;
+            if(code_seen('P')) codenum = code_value(); // milliseconds to wait
+            if(code_seen('S')) codenum = code_value() * 1000; // seconds to wait
+
+            Serial.println("Command received");
+            break;
+        }
+    }
+
+    else if(code_seen('M'))
+    {
+        switch( (int)code_value() )
+        {
+        case 4: //Ask for status
+            break;
+        case 5: //Reset errors
+            break;
+        }
+    }
+    else
+    {
+        Serial.println("Unknown command:");
+        Serial.println(cmdbuffer[bufindr]);
+    }
+
+    ClearToSend();
 }
 
 
-void loop()
+void FlushSerialRequestResend()
 {
+    //char cmdbuffer[bufindr][100]="Resend:";
+    Serial.flush();
+    Serial.print("Resend:");
 
-    if(buflen < CMD_BUF_THRESHOLD)
-        getCommand();
+    #if COMMNAD_LINE_ENABLE
+    Serial.println(command_LastNo + 1);
+    #else
+    Serial.println();
+    #endif
 
-    if(buflen)
+    ClearToSend();
+}
+
+void ClearToSend()
+{
+    //previous_millis_cmd = millis();
+    if (sysstatus == STATUS_ERROR)
     {
-        processCommands();
-
-        buflen = (buflen - 1);
-        bufindr = (bufindr + 1) % CMD_BUF_SIZE;
+        Serial.print("EC:");
+        Serial.println(error_code);
+        Serial.print(", ");
+        Serial.print(error_code_str[error_code]);
     }
 
-    //test,every n milliseconds
-    other_managements();
-
+    Serial.println("ok");
 }
 
 
@@ -197,7 +259,7 @@ inline void getCommand()
                     }
                     Serial.print("Last Line:");
                     Serial.println(command_LastNo);
-                    FlushSerialRequestREsend();
+                    FlushSerialRequestResend();
                     serial_count = 0;
                     return;
                 }
@@ -224,7 +286,7 @@ inline void getCommand()
 
                 }
 
-
+                //add buffer record
                 bufindw = (bufindw + 1) % CMD_BUF_SIZE;
                 buflen += 1;
 
@@ -241,105 +303,50 @@ inline void getCommand()
             //continue to receive the command char into buffer
             if(!comment_mode) cmdbuffer[bufindw][serial_count++] = serial_char;
         }
-    }
 
-
+    }//while(...)
 }
 
 
-inline float code_value()
+inline void cmd_in_loop()
 {
-    //return float value: strtod
-    return (strtod(&cmdbuffer[bufindr][strchr_pointer - cmdbuffer[bufindr] + 1], NULL));
-}
-inline long code_value_long()
-{
-    return (strtol(&cmdbuffer[bufindr][strchr_pointer - cmdbuffer[bufindr] + 1], NULL, 10));
-}
-inline bool code_seen(char code_string[])
-{
-    return (strstr(cmdbuffer[bufindr], code_string) != NULL);    //Return True if the string was found
-}
-
-inline bool code_seen(char code)
-{
-    strchr_pointer = strchr(cmdbuffer[bufindr], code);
-    return (strchr_pointer != NULL);  //Return True if a character was found
-}
-
-inline void processCommands()
-{
-    unsigned long codenum; //throw away variable
-    char *starpos = NULL;
-
-    if(code_seen('G'))
+    if(buflen < CMD_BUF_THRESHOLD)
     {
-        switch((int)code_value())
-        {
-        case 3: 
-            codenum = 0;
-            if(code_seen('P')) codenum = code_value(); // milliseconds to wait
-            if(code_seen('S')) codenum = code_value() * 1000; // seconds to wait
-
-            Serial.println("Command received");
-            break;
-        }
+        getCommand();   //one char per one call
     }
-
-    else if(code_seen('M'))
+    
+    if(buflen)
     {
+        processCommands();
 
-        switch( (int)code_value() )
-        {
-        case 4: //Ask for status
-            break;
-        case 5: //Reset errors
-            break;
-        }
-
+        buflen = (buflen - 1);
+        bufindr = (bufindr + 1) % CMD_BUF_SIZE;
     }
-    else
-    {
-        Serial.println("Unknown command:");
-        Serial.println(cmdbuffer[bufindr]);
-    }
-
-    ClearToSend();
-
 }
 
 
 
-void FlushSerialRequestREsend()
+
+
+
+
+
+
+//=======================================================================
+//                      Setup and Loop and others
+//=======================================================================
+void other_managements_test()
 {
-    //char cmdbuffer[bufindr][100]="Resend:";
-    Serial.flush();
-    Serial.print("Resend:");
-
-    #if COMMNAD_LINE_ENABLE
-    Serial.println(command_LastNo + 1);
-    #else
-    Serial.println();
-    #endif
-
-    ClearToSend();
 }
 
-void ClearToSend()
+void setup()
 {
-    //previous_millis_cmd = millis();
-    if (sysstatus == STATUS_ERROR)
-    {
-        Serial.print("EC:");
-        Serial.println(error_code);
-        Serial.print(", ");
-        Serial.print(error_code_str[error_code]);
-    }
-
-    Serial.println("ok");
+    Serial.begin(115200);
+    Serial.println("start");
 }
-
-
-void other_managements()
+void loop()
 {
+    cmd_in_loop();
+    //test,every n milliseconds
+    other_managements_test();
 }
