@@ -212,7 +212,8 @@ inline void getCommand()
                             Serial.println(cmd_error_code_str[i]);
                         }
                     }
-                    Serial.print("Last Line:");
+
+                    Serial.print("Serial Error: Last Line:");
                     Serial.println(command_LastNo);
                     FlushSerialRequestResend();
                     serial_count = 0;
@@ -281,11 +282,18 @@ inline void processCommands()
         switch((int)code_value())
         {
         case 3: 
-            codenum = 0;
-            if(code_seen('P')) codenum = code_value(); // milliseconds to wait
-            if(code_seen('S')) codenum = code_value() * 1000; // seconds to wait
+            codenum = 0;            
+            Serial.print("Command received:");
+            if(code_seen('P')) 
+            {
+                Serial.print("P:");Serial.print(code_value());
+            }
 
-            Serial.println("Command received");
+            if(code_seen('S')) 
+            {
+                Serial.print(" S:");Serial.println(code_value(),2);
+            }
+
             break;
         }
     }

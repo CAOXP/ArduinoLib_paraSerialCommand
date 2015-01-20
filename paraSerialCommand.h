@@ -24,7 +24,7 @@
 //                      command line defination
 //=======================================================================
 
-#define COMMNAD_LINE_ENABLE false       //N2 G0 X2
+#define COMMNAD_LINE_ENABLE true       //N2 G0 X2
 //check the CRC, if '*' included.
 #define COMMAND_CRC_ENABLE  false       //N2 G0 X2 *23
 
