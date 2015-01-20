@@ -18,7 +18,7 @@
 	#include "Arduino.h"
 	extern void cmd_in_loop();
 
-
+	//Configurations below
 
 //=======================================================================
 //                      command line defination
