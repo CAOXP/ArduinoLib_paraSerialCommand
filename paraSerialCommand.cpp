@@ -1,17 +1,8 @@
 // Do not remove the include below
 
 
-#include "Arduino.h"
+#include "paraSerialCommand.h"
 
-
-
-//=======================================================================
-//                      command line defination
-//=======================================================================
-
-#define COMMNAD_LINE_ENABLE false       //N2 G0 X2
-//check the CRC, if '*' included.
-#define COMMAND_CRC_ENABLE  false       //N2 G0 X2 *23
 
 
 
@@ -48,11 +39,7 @@ unsigned int error_code = ERROR_CODE_NO_ERROR;
 
 //=======================================================================
 //                      Command Buffer
-//
 //=======================================================================
-
-#define MAX_CMD_SIZE        80      //
-#define CMD_BUF_SIZE        5       //
 
 char cmdbuffer[CMD_BUF_SIZE][MAX_CMD_SIZE];
 
