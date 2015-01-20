@@ -5,14 +5,6 @@
 
 
 
-
-//=======================================================================
-//                      comment mode
-//
-//  ignore the command with ";"
-//=======================================================================
-boolean comment_mode = false;
-
 //=======================================================================
 //                      System status
 //
@@ -146,118 +138,113 @@ inline void getCommand()
         {
             if(!serial_count) return;               //if empty line
             cmdbuffer[bufindw][serial_count] = 0;   //terminate string
+            serial_count = 0;                       //index starts again
 
-            if(!comment_mode)
+            #if COMMAND_COMMENT_MODE
+            if(cmdbuffer[bufindw][0] == ';')return;
+            #endif
+
+            #if COMMNAD_LINE_ENABLE || COMMAND_CRC_ENABLE
+            cmd_error=CMD_ERROR_NO_ERROR;
+            #endif
+
+            #if COMMNAD_LINE_ENABLE
+
+            //some commands do not need command line number.
+            // if( strstr(cmdbuffer[bufindw], "RESET") != NULL  )
+            // {}
+            // else 
+            if(strstr(cmdbuffer[bufindw], "N") == NULL)
             {
-                #if COMMNAD_LINE_ENABLE || COMMAND_CRC_ENABLE
-                cmd_error=CMD_ERROR_NO_ERROR;
-                #endif
+                //tag error
+                cmd_error |= CMD_ERROR_LINE_NUMBER_LOSS;                    
+            }
+            else 
+            {
+                strchr_pointer = strchr(cmdbuffer[bufindw], 'N');
 
-                #if COMMNAD_LINE_ENABLE
-
-                //some commands do not need command line number.
-                // if( strstr(cmdbuffer[bufindw], "RESET") != NULL  )
-                // {}
-                // else 
-                if(strstr(cmdbuffer[bufindw], "N") == NULL)
+                //CHECK the command line
+                command_No = (strtol(&cmdbuffer[bufindw][strchr_pointer - cmdbuffer[bufindw] + 1], NULL, 10));
+                
+                if( command_No != (command_LastNo + 1) )
                 {
                     //tag error
-                    cmd_error |= CMD_ERROR_LINE_NUMBER_LOSS;                    
+                    cmd_error |= CMD_ERROR_LINE_NUMBER_MISMATCH;
                 }
-                else 
-                {
-                    strchr_pointer = strchr(cmdbuffer[bufindw], 'N');
+            }
+            #endif
 
-                    //CHECK the command line
-                    command_No = (strtol(&cmdbuffer[bufindw][strchr_pointer - cmdbuffer[bufindw] + 1], NULL, 10));
-                    
-                    if( command_No != (command_LastNo + 1) )
-                    {
-                        //tag error
-                        cmd_error |= CMD_ERROR_LINE_NUMBER_MISMATCH;
-                    }
-                }
-                #endif
+            #if COMMAND_CRC_ENABLE
+            //CHECK the CRC
+            if(strstr(cmdbuffer[bufindw], "*") == NULL)
+            {
+                //tag error
+                cmd_error |= CMD_ERROR_CRC_LOSS;
+            }
+            else
+            {
+                byte checksum = 0;
+                byte count    = 0;
+                while(cmdbuffer[bufindw][count] != '*') checksum = checksum ^ cmdbuffer[bufindw][count++];
+                strchr_pointer = strchr(cmdbuffer[bufindw], '*');
 
-                #if COMMAND_CRC_ENABLE
-                //CHECK the CRC
-                if(strstr(cmdbuffer[bufindw], "*") == NULL)
+                if( (int)(strtod(&cmdbuffer[bufindw][strchr_pointer - cmdbuffer[bufindw] + 1], NULL)) != checksum)
                 {
                     //tag error
-                    cmd_error |= CMD_ERROR_CRC_LOSS;
+                    cmd_error |= CMD_ERROR_CRC_MISMATCH;
                 }
-                else
-                {
-                    byte checksum = 0;
-                    byte count    = 0;
-                    while(cmdbuffer[bufindw][count] != '*') checksum = checksum ^ cmdbuffer[bufindw][count++];
-                    strchr_pointer = strchr(cmdbuffer[bufindw], '*');
+            }
 
-                    if( (int)(strtod(&cmdbuffer[bufindw][strchr_pointer - cmdbuffer[bufindw] + 1], NULL)) != checksum)
+            #endif
+
+            #if COMMNAD_LINE_ENABLE || COMMAND_CRC_ENABLE
+            if( cmd_error !=  CMD_ERROR_NO_ERROR)
+            {
+                for(i=0; i<4; i++)
+                {
+                    if(cmd_error & (1<<i)) 
                     {
-                        //tag error
-                        cmd_error |= CMD_ERROR_CRC_MISMATCH;
+                        Serial.println(cmd_error_code_str[i]);
                     }
                 }
 
-                #endif
-
-                #if COMMNAD_LINE_ENABLE || COMMAND_CRC_ENABLE
-                if( cmd_error !=  CMD_ERROR_NO_ERROR)
+                Serial.print("Serial Error: Last Line:");
+                Serial.println(command_LastNo);
+                FlushSerialRequestResend();
+                serial_count = 0;
+                return;
+            }
+            #endif
+            
+            #if COMMNAD_LINE_ENABLE
+            //if no errors, continue parsing
+            command_LastNo = command_No;
+            #endif
+            
+            //additional pre-process the command
+            if((strstr(cmdbuffer[bufindw], "G") != NULL))
+            {
+                strchr_pointer = strchr(cmdbuffer[bufindw], 'G');
+                switch((int)((strtod(&cmdbuffer[bufindw][strchr_pointer - cmdbuffer[bufindw] + 1], NULL))))
                 {
-                    for(i=0; i<4; i++)
-                    {
-                        if(cmd_error & (1<<i)) 
-                        {
-                            Serial.println(cmd_error_code_str[i]);
-                        }
-                    }
-
-                    Serial.print("Serial Error: Last Line:");
-                    Serial.println(command_LastNo);
-                    FlushSerialRequestResend();
-                    serial_count = 0;
-                    return;
-                }
-                #endif
-                
-                #if COMMNAD_LINE_ENABLE
-                //if no errors, continue parsing
-                command_LastNo = command_No;
-                #endif
-                
-                //additional pre-process the command
-                if((strstr(cmdbuffer[bufindw], "G") != NULL))
-                {
-                    strchr_pointer = strchr(cmdbuffer[bufindw], 'G');
-                    switch((int)((strtod(&cmdbuffer[bufindw][strchr_pointer - cmdbuffer[bufindw] + 1], NULL))))
-                    {
-                    case 0:
-                    case 1:
-                        Serial.println("ok");
-                        break;
-                    default:
-                        break;
-                    }
-
+                case 0:
+                case 1:
+                    Serial.println("ok");
+                    break;
+                default:
+                    break;
                 }
 
-                //add buffer record
-                bufindw = (bufindw + 1) % CMD_BUF_SIZE;
-                buflen += 1;
+            }
 
-            }//if(!comment_mode)
-
-            comment_mode = false; //for new command
-            serial_count = 0; //clear buffer
+            //add buffer record
+            bufindw = (bufindw + 1) % CMD_BUF_SIZE;
+            buflen += 1;
         }
         else
         {
-            //ignore the comment lines, which contains ';'
-            if(serial_char == ';') comment_mode = true;
-
             //continue to receive the command char into buffer
-            if(!comment_mode) cmdbuffer[bufindw][serial_count++] = serial_char;
+            cmdbuffer[bufindw][serial_count++] = serial_char;
         }
 
     }//while(...)

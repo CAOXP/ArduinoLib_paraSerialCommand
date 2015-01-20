@@ -21,20 +21,29 @@
 	//Configurations below
 
 //=======================================================================
-//                      command line defination
+//                      command line switch
 //=======================================================================
-
 #define COMMNAD_LINE_ENABLE true       //N2 G0 X2
+
+//=======================================================================
+//                      CRC switch
+//=======================================================================
 //check the CRC, if '*' included.
 #define COMMAND_CRC_ENABLE  false       //N2 G0 X2 *23
 
+
+//=======================================================================
+//                      comment mode switch
+//
+//  ignore the command starting with ";"
+//=======================================================================
+#define COMMAND_COMMENT_MODE  true       //;N2 G0 X2 *23
 
 
 //=======================================================================
 //                      Command Buffer
 //
 //=======================================================================
-
 #define MAX_CMD_SIZE        80      //length of each buffer
 #define CMD_BUF_SIZE        5       //how many buffers
 
