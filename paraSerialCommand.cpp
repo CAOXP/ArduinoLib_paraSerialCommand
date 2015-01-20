@@ -110,45 +110,6 @@ inline bool code_seen(char code)
     return (strchr_pointer != NULL);  //Return True if a character was found
 }
 
-inline void processCommands()
-{
-    unsigned long codenum; //throw away variable
-    char *starpos = NULL;
-
-    if(code_seen('G'))
-    {
-        switch((int)code_value())
-        {
-        case 3: 
-            codenum = 0;
-            if(code_seen('P')) codenum = code_value(); // milliseconds to wait
-            if(code_seen('S')) codenum = code_value() * 1000; // seconds to wait
-
-            Serial.println("Command received");
-            break;
-        }
-    }
-
-    else if(code_seen('M'))
-    {
-        switch( (int)code_value() )
-        {
-        case 4: //Ask for status
-            break;
-        case 5: //Reset errors
-            break;
-        }
-    }
-    else
-    {
-        Serial.println("Unknown command:");
-        Serial.println(cmdbuffer[bufindr]);
-    }
-
-    ClearToSend();
-}
-
-
 void FlushSerialRequestResend()
 {
     //char cmdbuffer[bufindr][100]="Resend:";
@@ -308,6 +269,7 @@ inline void getCommand()
 }
 
 
+
 inline void cmd_in_loop()
 {
     if(buflen < CMD_BUF_THRESHOLD)
@@ -325,28 +287,50 @@ inline void cmd_in_loop()
 }
 
 
-
-
-
-
-
-
-
 //=======================================================================
-//                      Setup and Loop and others
+//                      ProcessCommand   need change dependingly
 //=======================================================================
-void other_managements_test()
+
+
+inline void processCommands()
 {
+    unsigned long codenum; //throw away variable
+    char *starpos = NULL;
+
+    if(code_seen('G'))
+    {
+        switch((int)code_value())
+        {
+        case 3: 
+            codenum = 0;
+            if(code_seen('P')) codenum = code_value(); // milliseconds to wait
+            if(code_seen('S')) codenum = code_value() * 1000; // seconds to wait
+
+            Serial.println("Command received");
+            break;
+        }
+    }
+
+    else if(code_seen('M'))
+    {
+        switch( (int)code_value() )
+        {
+        case 4: //Ask for status
+            break;
+        case 5: //Reset errors
+            break;
+        }
+    }
+    else
+    {
+        Serial.println("Unknown command:");
+        Serial.println(cmdbuffer[bufindr]);
+    }
+
+    ClearToSend();
 }
 
-void setup()
-{
-    Serial.begin(115200);
-    Serial.println("start");
-}
-void loop()
-{
-    cmd_in_loop();
-    //test,every n milliseconds
-    other_managements_test();
-}
+
+
+
+
