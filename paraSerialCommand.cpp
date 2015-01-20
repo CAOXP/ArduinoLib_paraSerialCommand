@@ -1,6 +1,8 @@
 // Do not remove the include below
 
 
+#include "Arduino.h"
+
 #define STATUS_OK       0
 #define STATUS_SD       1
 #define STATUS_ERROR    2
@@ -110,6 +112,21 @@ inline bool code_seen(char code)
     return (strchr_pointer != NULL);  //Return True if a character was found
 }
 
+
+void ClearToSend()
+{
+    //previous_millis_cmd = millis();
+    if (sysstatus == STATUS_ERROR)
+    {
+        Serial.print("EC:");
+        Serial.println(error_code);
+        Serial.print(", ");
+        Serial.print(error_code_str[error_code]);
+    }
+
+    Serial.println("ok");
+}
+
 void FlushSerialRequestResend()
 {
     //char cmdbuffer[bufindr][100]="Resend:";
@@ -125,19 +142,6 @@ void FlushSerialRequestResend()
     ClearToSend();
 }
 
-void ClearToSend()
-{
-    //previous_millis_cmd = millis();
-    if (sysstatus == STATUS_ERROR)
-    {
-        Serial.print("EC:");
-        Serial.println(error_code);
-        Serial.print(", ");
-        Serial.print(error_code_str[error_code]);
-    }
-
-    Serial.println("ok");
-}
 
 
 inline void getCommand()
@@ -270,21 +274,6 @@ inline void getCommand()
 
 
 
-inline void cmd_in_loop()
-{
-    if(buflen < CMD_BUF_THRESHOLD)
-    {
-        getCommand();   //one char per one call
-    }
-    
-    if(buflen)
-    {
-        processCommands();
-
-        buflen = (buflen - 1);
-        bufindr = (bufindr + 1) % CMD_BUF_SIZE;
-    }
-}
 
 
 //=======================================================================
@@ -334,3 +323,20 @@ inline void processCommands()
 
 
 
+
+
+void cmd_in_loop()
+{
+    if(buflen < CMD_BUF_THRESHOLD)
+    {
+        getCommand();   //one char per one call
+    }
+    
+    if(buflen)
+    {
+        processCommands();
+
+        buflen = (buflen - 1);
+        bufindr = (bufindr + 1) % CMD_BUF_SIZE;
+    }
+}
