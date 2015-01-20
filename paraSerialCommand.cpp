@@ -251,25 +251,18 @@ inline void getCommand()
 }
 
 
-
-
-
 //=======================================================================
-//                      ProcessCommand   need change dependingly
+//                      ProcessCommand   need change dependently
 //=======================================================================
 
 
 inline void processCommands()
 {
-    unsigned long codenum; //throw away variable
-    char *starpos = NULL;
-
     if(code_seen('G'))
     {
         switch((int)code_value())
         {
-        case 3: 
-            codenum = 0;            
+        case 3:           
             Serial.print("Command received:");
             if(code_seen('P')) 
             {
