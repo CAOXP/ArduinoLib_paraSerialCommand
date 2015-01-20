@@ -169,11 +169,10 @@ inline void getCommand()
                 #if COMMNAD_LINE_ENABLE
 
                 //some commands do not need command line number.
-                if( strstr(cmdbuffer[bufindw], "M110") != NULL  )
-                {
-
-                }
-                else if(strstr(cmdbuffer[bufindw], "N") == NULL)
+                // if( strstr(cmdbuffer[bufindw], "RESET") != NULL  )
+                // {}
+                // else 
+                if(strstr(cmdbuffer[bufindw], "N") == NULL)
                 {
                     //tag error
                     cmd_error |= CMD_ERROR_LINE_NUMBER_LOSS;                    
