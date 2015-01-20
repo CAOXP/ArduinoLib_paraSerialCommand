@@ -3,21 +3,7 @@
 
 #include "Arduino.h"
 
-#define STATUS_OK       0
-#define STATUS_SD       1
-#define STATUS_ERROR    2
 
-#define ERROR_CODE_NO_ERROR     0
-#define ERROR_CODE_ERROR_1      1
-#define ERROR_CODE_ERROR_2      2
-
-const char *error_code_str[] =  {   "No Error", 
-                                    "Error 1", 
-                                    "Error 2" };
-
-const char *sysstatus_str[]  =  {   "Ok", 
-                                    "SD", 
-                                    "Error"};
 
 //=======================================================================
 //                      command line defination
@@ -40,6 +26,22 @@ boolean comment_mode = false;
 //                      System status
 //
 //=======================================================================
+#define STATUS_OK       0
+#define STATUS_SD       1
+#define STATUS_ERROR    2
+
+#define ERROR_CODE_NO_ERROR     0
+#define ERROR_CODE_ERROR_1      1
+#define ERROR_CODE_ERROR_2      2
+
+const char *error_code_str[] =  {   "No Error", 
+                                    "Error 1", 
+                                    "Error 2" };
+
+const char *sysstatus_str[]  =  {   "Ok", 
+                                    "SD", 
+                                    "Error"};
+
 unsigned int sysstatus  = STATUS_OK;
 unsigned int error_code = ERROR_CODE_NO_ERROR; 
 
@@ -166,10 +168,12 @@ inline void getCommand()
 
                 #if COMMNAD_LINE_ENABLE
 
-                //some commands do not need command line number.    [not done yet]
-                //if( strstr(cmdbuffer[bufindw], "M110") == NULL  )
+                //some commands do not need command line number.
+                if( strstr(cmdbuffer[bufindw], "M110") != NULL  )
+                {
 
-                if(strstr(cmdbuffer[bufindw], "N") == NULL)
+                }
+                else if(strstr(cmdbuffer[bufindw], "N") == NULL)
                 {
                     //tag error
                     cmd_error |= CMD_ERROR_LINE_NUMBER_LOSS;                    
@@ -178,10 +182,10 @@ inline void getCommand()
                 {
                     strchr_pointer = strchr(cmdbuffer[bufindw], 'N');
 
-                    //CHECK the command sequence
+                    //CHECK the command line
                     command_No = (strtol(&cmdbuffer[bufindw][strchr_pointer - cmdbuffer[bufindw] + 1], NULL, 10));
                     
-                    if(command_No != command_LastNo + 1)
+                    if( command_No != (command_LastNo + 1) )
                     {
                         //tag error
                         cmd_error |= CMD_ERROR_LINE_NUMBER_MISMATCH;
