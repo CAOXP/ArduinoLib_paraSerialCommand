@@ -35,8 +35,8 @@
 //
 //=======================================================================
 
-#define MAX_CMD_SIZE        80      //
-#define CMD_BUF_SIZE        5       //
+#define MAX_CMD_SIZE        80      //length of each buffer
+#define CMD_BUF_SIZE        5       //how many buffers
 
 	
 #endif
