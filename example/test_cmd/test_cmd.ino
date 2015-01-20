@@ -1,12 +1,17 @@
 #include "paraSerialCommand.h"
 
+//=======================================================================
+//   Attention:
+//		1.You need to include this Library to your project folder
+//		2.rewrite the function: processCommand() to add your features.
+//
+//=======================================================================
 
 
-//=======================================================================
-//                      Setup and Loop and others
-//=======================================================================
 void other_managements_test()
 {
+	//add your code here
+	// to precess other stuff
 }
 
 void setup()
