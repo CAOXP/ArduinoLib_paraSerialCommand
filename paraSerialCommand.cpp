@@ -291,9 +291,9 @@ inline void processCommands()
 
             if(code_seen('S')) 
             {
-                Serial.print(" S:");Serial.println(code_value(),2);
+                Serial.print(" S:");Serial.print(code_value(),2);
             }
-
+            Serial.println();
             break;
         }
     }
