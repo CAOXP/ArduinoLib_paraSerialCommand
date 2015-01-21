@@ -1,4 +1,3 @@
-#include "paraSerialCommand.h"
 
 //=======================================================================
 //   Attention:
@@ -6,14 +5,14 @@
 //		2.rewrite the function: processCommand() to add your features.
 //
 //=======================================================================
-
+#include "paraSerialCommand.h"
 
 void other_managements_test()
 {
 	//add your code here
 	// to precess other stuff
 }
-
+ 
 void setup()
 {
     Serial.begin(115200);
@@ -40,4 +39,39 @@ void loop()
 //=======================================================================
 
 void commandProcess()
-{
+{   
+ 	if(cmd_seen('G'))
+    {
+        switch((int)cmd_value())
+        {
+        case 3:           
+            Serial.print("Command received:");
+            if(cmd_seen('P')) 
+            {
+                Serial.print("P:");Serial.print(cmd_value());
+            }
+
+            if(cmd_seen('S')) 
+            {
+                Serial.print(" S:");Serial.print(cmd_value(),2);
+            }
+            Serial.println();
+            break;
+        }
+    }
+
+    else if(cmd_seen('M'))
+    {
+        switch( (int)cmd_value() )
+        {
+        case 4: //Ask for status
+            break;
+        case 5: //Reset errors
+            break;
+        }
+    }
+    else
+    {
+        Serial.println("Unknown command");
+    }
+}    
