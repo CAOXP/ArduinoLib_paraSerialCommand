@@ -313,8 +313,10 @@ void cmd_in_loop()
     if(buflen)
     {
         processCommands();
-
-        buflen = (buflen - 1);
-        bufindr = (bufindr + 1) % CMD_BUF_SIZE;
+        
+        //buffer pointer and buffer length
+        buflen  --;
+        bufindr ++;
+        bufindr %= CMD_BUF_SIZE;
     }
 }
