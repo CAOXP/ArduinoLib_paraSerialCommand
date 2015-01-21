@@ -19,11 +19,6 @@
 
 	extern void cmd_in_loop();
 
-	extern float cmd_value();
-	extern long cmd_value_long();
-	extern bool cmd_seen(char code_string[]);
-	extern bool cmd_seen(char code);
-
 	extern void commandProcess();
 
 	//Configurations below

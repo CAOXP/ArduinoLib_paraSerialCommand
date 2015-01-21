@@ -65,28 +65,6 @@ unsigned long command_LastNo=0;
 byte cmd_error=CMD_ERROR_NO_ERROR;
 #endif
 
-//=======================================================================
-//                      functions
-//=======================================================================
-float cmd_value()
-{
-    //return float value: strtod
-    return (strtod(&cmdbuffer[bufindr][strchr_pointer - cmdbuffer[bufindr] + 1], NULL));
-}
-long cmd_value_long()
-{
-    return (strtol(&cmdbuffer[bufindr][strchr_pointer - cmdbuffer[bufindr] + 1], NULL, 10));
-}
-bool cmd_seen(char code_string[])
-{
-    return (strstr(cmdbuffer[bufindr], code_string) != NULL);    //Return True if the string was found
-}
-
-bool cmd_seen(char code)
-{
-    strchr_pointer = strchr(cmdbuffer[bufindr], code);
-    return (strchr_pointer != NULL);  //Return True if a character was found
-}
 
 #if CMD_PROCESS_CLEAR_SEND
 inline void ClearToSend()

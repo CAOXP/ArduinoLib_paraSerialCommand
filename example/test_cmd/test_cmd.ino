@@ -37,6 +37,12 @@ void loop()
 //
 //			called by processSerialCommands() in paraSericalCommandLib;
 //=======================================================================
+extern char cmdbuffer[CMD_BUF_SIZE][MAX_CMD_SIZE];
+extern char *strchr_pointer; extern unsigned int bufindr;
+inline float cmd_value() {return (strtod(&cmdbuffer[bufindr][strchr_pointer - cmdbuffer[bufindr] + 1], NULL));}
+inline long  cmd_value_long() {return (strtol(&cmdbuffer[bufindr][strchr_pointer - cmdbuffer[bufindr] + 1], NULL, 10));}
+inline bool  cmd_seen(char code_string[]) { return (strstr(cmdbuffer[bufindr], code_string) != NULL);}    //Return True if the string was found
+inline bool  cmd_seen(char code){strchr_pointer = strchr(cmdbuffer[bufindr], code); return (strchr_pointer != NULL); } //Return True if a character was found
 
 void commandProcess()
 {   
