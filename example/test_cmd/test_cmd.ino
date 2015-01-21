@@ -19,9 +19,25 @@ void setup()
     Serial.begin(115200);
     Serial.println("start");
 }
+
+
+
 void loop()
 {
-    cmd_in_loop();
+	cmd_in_loop();			//receive serial commands.process the serial commands.
+
+
     //test,every n milliseconds
     other_managements_test();
 }
+
+
+
+//=======================================================================
+//                      ProcessCommand   need change dependently
+//
+//			called by processSerialCommands() in paraSericalCommandLib;
+//=======================================================================
+
+void commandProcess()
+{

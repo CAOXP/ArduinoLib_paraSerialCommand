@@ -1,13 +1,8 @@
-// Do not remove the include below
-
 
 #include "paraSerialCommand.h"
 
-
-
 //=======================================================================
 //                      System status
-//
 //=======================================================================
 #define STATUS_OK       0
 #define STATUS_SD       1
@@ -35,6 +30,12 @@ unsigned int error_code = ERROR_CODE_NO_ERROR;
 
 char cmdbuffer[CMD_BUF_SIZE][MAX_CMD_SIZE];
 
+//extern char *strstr(char *sr,char *s);
+//  搜索字串s在字串sr中的第一次出现的地址    返回为[实际]地址指针 char *
+//extern char *strchr(char *sr,char c);
+//  查找字串sr中首次出现字符c的位置的地址    返回为[实际]地址指针 char *
+char *strchr_pointer; // just a pointer to find chars in the cmd string
+
 //buffer threshold
 // getCommand() from PC, if 'buflen' lower than this
 #define CMD_BUF_THRESHOLD  (CMD_BUF_SIZE-1)  
@@ -47,11 +48,6 @@ char serial_char;
 unsigned int i = 0;
 unsigned int serial_count = 0;
 
-//extern char *strstr(char *sr,char *s);
-//  搜索字串s在字串sr中的第一次出现的地址    返回为[实际]地址指针 char *
-//extern char *strchr(char *sr,char c);
-//  查找字串sr中首次出现字符c的位置的地址    返回为[实际]地址指针 char *
-char *strchr_pointer; // just a pointer to find chars in the cmd string like X, Y, Z, E, etc
 
 
 #if COMMNAD_LINE_ENABLE || COMMAND_CRC_ENABLE
@@ -69,32 +65,31 @@ unsigned long command_LastNo=0;
 byte cmd_error=CMD_ERROR_NO_ERROR;
 #endif
 
-
-
-
-
-inline float code_value()
+//=======================================================================
+//                      functions
+//=======================================================================
+float cmd_value()
 {
     //return float value: strtod
     return (strtod(&cmdbuffer[bufindr][strchr_pointer - cmdbuffer[bufindr] + 1], NULL));
 }
-inline long code_value_long()
+long cmd_value_long()
 {
     return (strtol(&cmdbuffer[bufindr][strchr_pointer - cmdbuffer[bufindr] + 1], NULL, 10));
 }
-inline bool code_seen(char code_string[])
+bool cmd_seen(char code_string[])
 {
     return (strstr(cmdbuffer[bufindr], code_string) != NULL);    //Return True if the string was found
 }
 
-inline bool code_seen(char code)
+bool cmd_seen(char code)
 {
     strchr_pointer = strchr(cmdbuffer[bufindr], code);
     return (strchr_pointer != NULL);  //Return True if a character was found
 }
 
-
-void ClearToSend()
+#if CMD_PROCESS_CLEAR_SEND
+inline void ClearToSend()
 {
     //previous_millis_cmd = millis();
     if (sysstatus == STATUS_ERROR)
@@ -107,8 +102,10 @@ void ClearToSend()
 
     Serial.println("ok");
 }
+#endif
 
-void FlushSerialRequestResend()
+#if COMMNAD_LINE_ENABLE || COMMAND_CRC_ENABLE || CMD_REQUEST_RESEND
+inline void FlushSerialRequestResend()
 {
     //char cmdbuffer[bufindr][100]="Resend:";
     Serial.flush();
@@ -118,11 +115,13 @@ void FlushSerialRequestResend()
     Serial.println(command_LastNo + 1);
     #else
     Serial.println();
+
     #endif
-
+    #if CMD_PROCESS_CLEAR_SEND
     ClearToSend();
+    #endif
 }
-
+#endif
 
 
 inline void getCommand()
@@ -153,19 +152,19 @@ inline void getCommand()
             //some commands do not need command line number.
             // if( strstr(cmdbuffer[bufindw], "RESET") != NULL  )
             // {}
-            // else 
+            // else
             if(strstr(cmdbuffer[bufindw], "N") == NULL)
             {
                 //tag error
-                cmd_error |= CMD_ERROR_LINE_NUMBER_LOSS;                    
+                cmd_error |= CMD_ERROR_LINE_NUMBER_LOSS;
             }
-            else 
+            else
             {
                 strchr_pointer = strchr(cmdbuffer[bufindw], 'N');
 
                 //CHECK the command line
                 command_No = (strtol(&cmdbuffer[bufindw][strchr_pointer - cmdbuffer[bufindw] + 1], NULL, 10));
-                
+
                 if( command_No != (command_LastNo + 1) )
                 {
                     //tag error
@@ -202,7 +201,7 @@ inline void getCommand()
             {
                 for(i=0; i<4; i++)
                 {
-                    if(cmd_error & (1<<i)) 
+                    if(cmd_error & (1<<i))
                     {
                         Serial.println(cmd_error_code_str[i]);
                     }
@@ -215,27 +214,11 @@ inline void getCommand()
                 return;
             }
             #endif
-            
+
             #if COMMNAD_LINE_ENABLE
             //if no errors, continue parsing
             command_LastNo = command_No;
             #endif
-            
-            //additional pre-process the command
-            if((strstr(cmdbuffer[bufindw], "G") != NULL))
-            {
-                strchr_pointer = strchr(cmdbuffer[bufindw], 'G');
-                switch((int)((strtod(&cmdbuffer[bufindw][strchr_pointer - cmdbuffer[bufindw] + 1], NULL))))
-                {
-                case 0:
-                case 1:
-                    Serial.println("ok");
-                    break;
-                default:
-                    break;
-                }
-
-            }
 
             //add buffer record
             bufindw = (bufindw + 1) % CMD_BUF_SIZE;
@@ -251,53 +234,10 @@ inline void getCommand()
 }
 
 
+
 //=======================================================================
 //                      ProcessCommand   need change dependently
 //=======================================================================
-
-
-inline void processCommands()
-{
-    if(code_seen('G'))
-    {
-        switch((int)code_value())
-        {
-        case 3:           
-            Serial.print("Command received:");
-            if(code_seen('P')) 
-            {
-                Serial.print("P:");Serial.print(code_value());
-            }
-
-            if(code_seen('S')) 
-            {
-                Serial.print(" S:");Serial.print(code_value(),2);
-            }
-            Serial.println();
-            break;
-        }
-    }
-
-    else if(code_seen('M'))
-    {
-        switch( (int)code_value() )
-        {
-        case 4: //Ask for status
-            break;
-        case 5: //Reset errors
-            break;
-        }
-    }
-    else
-    {
-        Serial.println("Unknown command:");
-        Serial.println(cmdbuffer[bufindr]);
-    }
-
-    ClearToSend();
-}
-
-
 
 void cmd_in_loop()
 {
@@ -305,10 +245,15 @@ void cmd_in_loop()
     {
         getCommand();   //one char per one call
     }
-    
+
+    //process the commands below
     if(buflen)
     {
-        processCommands();
+        commandProcess();
+
+        #if CMD_PROCESS_CLEAR_SEND
+        ClearToSend();
+        #endif
 
         //buffer pointer and buffer length
         buflen  --;
