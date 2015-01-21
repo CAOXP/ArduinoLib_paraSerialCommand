@@ -198,7 +198,7 @@ inline void getCommand()
             command_LastNo = command_No;
             #endif
 
-            
+            #if 0
             //additional pre-process the command
             if((strstr(cmdbuffer[bufindw], "G") != NULL))
             {
@@ -214,7 +214,8 @@ inline void getCommand()
                 }
 
             }
-
+            #endif
+            
             //add buffer record
             bufindw = (bufindw + 1) % CMD_BUF_SIZE;
             buflen += 1;
