@@ -198,6 +198,23 @@ inline void getCommand()
             command_LastNo = command_No;
             #endif
 
+            
+            //additional pre-process the command
+            if((strstr(cmdbuffer[bufindw], "G") != NULL))
+            {
+                strchr_pointer = strchr(cmdbuffer[bufindw], 'G');
+                switch((int)((strtod(&cmdbuffer[bufindw][strchr_pointer - cmdbuffer[bufindw] + 1], NULL))))
+                {
+                case 0:
+                case 1:
+                    Serial.println("ok");
+                    break;
+                default:
+                    break;
+                }
+
+            }
+
             //add buffer record
             bufindw = (bufindw + 1) % CMD_BUF_SIZE;
             buflen += 1;
