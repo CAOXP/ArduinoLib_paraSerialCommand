@@ -299,10 +299,6 @@ inline void processCommands()
 
 
 
-
-
-
-
 void cmd_in_loop()
 {
     if(buflen < CMD_BUF_THRESHOLD)
@@ -313,7 +309,7 @@ void cmd_in_loop()
     if(buflen)
     {
         processCommands();
-        
+
         //buffer pointer and buffer length
         buflen  --;
         bufindr ++;
