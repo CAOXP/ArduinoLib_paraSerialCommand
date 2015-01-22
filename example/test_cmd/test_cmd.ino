@@ -62,7 +62,7 @@ void commandProcess()
                 Serial.print(" S:");Serial.print(cmd_value(),2);
             }
             Serial.println(); 
-            break;
+            break; 
         }
     }
 
