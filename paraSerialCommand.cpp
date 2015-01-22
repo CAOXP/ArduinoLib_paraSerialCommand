@@ -200,6 +200,7 @@ inline void getCommand()
 
             #if 0
             //additional pre-process the command
+            //No inflect to running speed.
             if((strstr(cmdbuffer[bufindw], "G") != NULL))
             {
                 strchr_pointer = strchr(cmdbuffer[bufindw], 'G');
