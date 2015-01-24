@@ -26,27 +26,27 @@
 //=======================================================================
 //                      command line switch
 //=======================================================================
-#define COMMNAD_LINE_ENABLE 	true       //N2 G0 X2
+#define COMMNAD_LINE_ENABLE 	false       //N2 G0 X2
 
 //=======================================================================
 //                      CRC switch
 //check the CRC, after '*'
 //=======================================================================
-#define COMMAND_CRC_ENABLE  	true       //N2 G0 X2 *23
+#define COMMAND_CRC_ENABLE  	false       //N2 G0 X2 *23
 
 
 //=======================================================================
 //                      Clear to send
 //	After process one command, send "ok" back.
 //=======================================================================
-#define	CMD_PROCESS_CLEAR_SEND	true
+#define	CMD_PROCESS_CLEAR_SEND	false
 
 //=======================================================================
 //                      Need resend command when
 //  1.command unknown
 //	2.error on line number or CRC
 //=======================================================================
-#define	CMD_REQUEST_RESEND		true
+#define	CMD_REQUEST_RESEND		false
 
 
 
@@ -55,7 +55,7 @@
 //
 //  ignore the command starting with ";"
 //=======================================================================
-#define COMMAND_COMMENT_MODE  	true       //;N2 G0 X2 *23
+#define COMMAND_COMMENT_MODE  	false       //;N2 G0 X2 *23
 
 
 //=======================================================================
